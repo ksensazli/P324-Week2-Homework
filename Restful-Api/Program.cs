@@ -14,8 +14,9 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Logging middleware'i ekleyin
+// Add logging and exception middleware
 app.UseMiddleware<LoggingMiddleware>();
+app.UseMiddleware<ExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
