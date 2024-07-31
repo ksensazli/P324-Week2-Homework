@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Restful_Api.Models;
+using Restful_Api.Services;
 
 namespace Restful_Api.Controllers;
 
@@ -7,39 +8,24 @@ namespace Restful_Api.Controllers;
 [ApiController]
 public class ProductsController : ControllerBase
 {
-    private static List<Product> products = new List<Product>
+    private readonly IProductService _productService;
+
+    public ProductsController(IProductService productService)
     {
-        new Product { Id = 1, Name = "Product1", Price = 10.0M, Description = "Description1" },
-        new Product { Id = 2, Name = "Product2", Price = 20.0M, Description = "Description2" }
-    };
+        _productService = productService;
+    }
 
     [HttpGet]
     public ActionResult<IEnumerable<Product>> GetProducts([FromQuery] string name, [FromQuery] string sort)
     {
-        var result = products.AsEnumerable();
-
-        if (!string.IsNullOrEmpty(name))
-        {
-            result = result.Where(p => p.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (!string.IsNullOrEmpty(sort))
-        {
-            result = sort switch
-            {
-                "name" => result.OrderBy(p => p.Name),
-                "price" => result.OrderBy(p => p.Price),
-                _ => result
-            };
-        }
-
+        var result = _productService.GetProducts(name, sort);
         return Ok(result);
     }
 
     [HttpGet("{id}")]
     public ActionResult<Product> GetProduct(int id)
     {
-        var product = products.FirstOrDefault(p => p.Id == id);
+        var product = _productService.GetProduct(id);
         if (product == null)
         {
             return NotFound();
@@ -56,9 +42,7 @@ public class ProductsController : ControllerBase
             return BadRequest();
         }
 
-        product.Id = products.Max(p => p.Id) + 1;
-        products.Add(product);
-
+        _productService.AddProduct(product);
         return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
     }
 
@@ -70,30 +54,14 @@ public class ProductsController : ControllerBase
             return BadRequest();
         }
 
-        var existingProduct = products.FirstOrDefault(p => p.Id == id);
-        if (existingProduct == null)
-        {
-            return NotFound();
-        }
-
-        existingProduct.Name = product.Name;
-        existingProduct.Price = product.Price;
-        existingProduct.Description = product.Description;
-
+        _productService.UpdateProduct(id, product);
         return NoContent();
     }
 
     [HttpDelete("{id}")]
     public IActionResult DeleteProduct(int id)
     {
-        var product = products.FirstOrDefault(p => p.Id == id);
-        if (product == null)
-        {
-            return NotFound();
-        }
-
-        products.Remove(product);
-
+        _productService.DeleteProduct(id);
         return NoContent();
     }
 }
